@@ -11,15 +11,6 @@ This project involves the design and implementation of an **AI-driven customer a
 
 ---
 
-### Constraints & Requirements
-
-- **Team Size:** 4 Students
-- **API Budget:** Free Tier Only (Open-source models / Free APIs)
-- **Framework:** LangGraph 
-- **Hosting:** Streamlit Cloud
-
----
-
 ### Technology Stack
 
 | Component | Technology |
