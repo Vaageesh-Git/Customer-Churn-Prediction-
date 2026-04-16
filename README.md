@@ -270,5 +270,3 @@ This project is developed for educational purposes as part of the Intro to GenAI
 For questions or feedback, please contact [Add contact information]
 
 ---
-
-**Last Updated:** February 2026
