@@ -42,6 +42,11 @@ def get_vector_store(use_cloud=False, cloud_api_key=None):
             client=client,
         )
     else:
+        if not os.path.exists(DB_PATH):
+            raise FileNotFoundError(
+                f"chroma_db not found at {DB_PATH}. "
+                "Run: python -m src.agent.build_vectorstore"
+            )
         return Chroma(
             collection_name="saas_retention_strategies",
             embedding_function=EMBEDDINGS,

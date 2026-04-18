@@ -5,7 +5,15 @@ import plotly.graph_objects as go
 import plotly.express as px
 from src.model_training import load_all_models
 from src.preprocessing import preprocess_input, load_columns, load_scaler
-from src.agent.graph import retention_agent
+
+try:
+    from src.agent.graph import retention_agent
+
+    AGENT_AVAILABLE = True
+except Exception as _agent_import_err:
+    retention_agent = None
+    AGENT_AVAILABLE = False
+    print(f"[app.py] Agent import failed: {_agent_import_err}")
 
 st.set_page_config(
     page_title="Customer Churn Prediction AI",
@@ -704,6 +712,12 @@ elif st.session_state.page == "agent_report":
             st.session_state.page = "prediction"
             st.rerun()
     else:
+        if not AGENT_AVAILABLE or retention_agent is None:
+            st.error(
+                "The AI agent could not be loaded. Check your terminal for the import error."
+            )
+            st.stop()
+
         with st.spinner(
             "🔍 Assessing risk profile... 📚 Retrieving retention strategies... "
             "🧠 Planning intervention... 📝 Generating report..."
