@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import json
+import pickle
 import plotly.graph_objects as go
 import plotly.express as px
 from src.model_training import load_all_models
@@ -127,6 +129,19 @@ def load_resources():
 
 
 models, columns, scaler = load_resources()
+
+
+@st.cache_resource
+def load_evaluation_data():
+    """Load pre-computed test split for evaluation metrics and confusion matrix."""
+    with open("models/test_data.pkl", "rb") as f:
+        test_data = pickle.load(f)
+    with open("models/metrics.json", "r") as f:
+        metrics = json.load(f)
+    return test_data, metrics
+
+
+test_data, all_metrics = load_evaluation_data()
 
 
 if "page" not in st.session_state:
@@ -631,6 +646,92 @@ elif st.session_state.page == "result":
     )
 
     st.plotly_chart(fig_prob, use_container_width=True)
+
+    # ==================== MODEL PERFORMANCE METRICS ====================
+    st.markdown(
+        "<h2 class='section-header'>📈 Model Performance Metrics</h2>",
+        unsafe_allow_html=True,
+    )
+
+    m = all_metrics.get(model_name, {})
+
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    metric_style = (
+        "background:white; border-radius:15px; padding:25px 10px; text-align:center;"
+        "box-shadow:0 8px 25px rgba(0,0,0,0.15);"
+    )
+
+    with col_m1:
+        st.markdown(
+            f"<div style='{metric_style}'>"
+            f"<div style='font-size:0.9em;color:#6b7280;font-weight:600;"
+            f"text-transform:uppercase;letter-spacing:1px;'>Accuracy</div>"
+            f"<div style='font-size:2.8em;font-weight:900;color:#7e22ce;margin:8px 0;'>"
+            f"{m.get('accuracy', 0):.1%}</div></div>",
+            unsafe_allow_html=True,
+        )
+    with col_m2:
+        st.markdown(
+            f"<div style='{metric_style}'>"
+            f"<div style='font-size:0.9em;color:#6b7280;font-weight:600;"
+            f"text-transform:uppercase;letter-spacing:1px;'>Precision</div>"
+            f"<div style='font-size:2.8em;font-weight:900;color:#ec4899;margin:8px 0;'>"
+            f"{m.get('precision', 0):.1%}</div></div>",
+            unsafe_allow_html=True,
+        )
+    with col_m3:
+        st.markdown(
+            f"<div style='{metric_style}'>"
+            f"<div style='font-size:0.9em;color:#6b7280;font-weight:600;"
+            f"text-transform:uppercase;letter-spacing:1px;'>Recall</div>"
+            f"<div style='font-size:2.8em;font-weight:900;color:#f59e0b;margin:8px 0;'>"
+            f"{m.get('recall', 0):.1%}</div></div>",
+            unsafe_allow_html=True,
+        )
+    with col_m4:
+        st.markdown(
+            f"<div style='{metric_style}'>"
+            f"<div style='font-size:0.9em;color:#6b7280;font-weight:600;"
+            f"text-transform:uppercase;letter-spacing:1px;'>F1 Score</div>"
+            f"<div style='font-size:2.8em;font-weight:900;color:#10b981;margin:8px 0;'>"
+            f"{m.get('f1', 0):.1%}</div></div>",
+            unsafe_allow_html=True,
+        )
+
+    # Confusion Matrix
+    st.markdown(
+        "<h2 class='section-header'>🔢 Confusion Matrix</h2>",
+        unsafe_allow_html=True,
+    )
+
+    from sklearn.metrics import confusion_matrix as sk_confusion_matrix
+    import plotly.figure_factory as ff
+
+    y_pred_eval = model.predict(test_data["X_test_scaled"])
+    cm = sk_confusion_matrix(test_data["y_test"], y_pred_eval)
+
+    cm_labels = ["Will Stay", "Will Churn"]
+    fig_cm = ff.create_annotated_heatmap(
+        z=cm,
+        x=cm_labels,
+        y=cm_labels,
+        colorscale=[[0, "#f0f4ff"], [1, "#7e22ce"]],
+        showscale=False,
+        annotation_text=[[str(v) for v in row] for row in cm],
+    )
+    fig_cm.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font={"color": "white", "family": "Arial", "size": 14},
+        height=350,
+        xaxis={"title": "Predicted", "side": "bottom"},
+        yaxis={"title": "Actual", "autorange": "reversed"},
+        margin={"l": 80, "r": 40, "t": 40, "b": 60},
+    )
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.plotly_chart(fig_cm, use_container_width=True)
 
     # ---- AI RETENTION STRATEGY SECTION ----
     st.markdown(
