@@ -5,6 +5,7 @@ Each function represents one step in the reasoning pipeline.
 
 import os
 from src.agent.state import ChurnAgentState
+from src.agent.retriever import retrieve_strategies as rag_retrieve
 
 
 def assess_risk(state: ChurnAgentState) -> ChurnAgentState:
@@ -86,11 +87,42 @@ def assess_risk(state: ChurnAgentState) -> ChurnAgentState:
 def retrieve_strategies(state: ChurnAgentState) -> ChurnAgentState:
     """
     Node 2: RAG Retrieval
-    Builds a retrieval_query from risk_level and risk_drivers.
-    Calls retriever.retrieve_strategies() to fetch relevant chunks.
-    Returns updated state with retrieval_query and retrieved_strategies populated.
+    Builds a targeted retrieval query from the risk profile.
+    Calls the Chroma vector store to fetch relevant strategy chunks.
+    Falls back gracefully if the vector store is unavailable.
     """
-    raise NotImplementedError("To be implemented in agent implementation prompt.")
+    risk_level = state["risk_level"]
+    drivers = state["risk_drivers"]
+    data = state["customer_data"]
+
+    # Build a rich, specific query for semantic search
+    contract = data.get("Contract", "")
+    tenure = data.get("tenure", 0)
+    internet = data.get("InternetService", "")
+
+    query = (
+        f"customer retention strategy for {risk_level} churn risk customer "
+        f"with {contract.lower()} contract, {tenure} months tenure"
+    )
+    if internet:
+        query += f", {internet.lower()} internet service"
+    if drivers:
+        # Add the top 2 drivers as additional context
+        query += f". Key issues: {', '.join(drivers[:2])}"
+
+    # Attempt RAG retrieval with graceful fallback
+    try:
+        use_cloud = os.getenv("USE_CHROMA_CLOUD", "false").lower() == "true"
+        chunks = rag_retrieve(query, k=4, use_cloud=use_cloud)
+    except Exception as e:
+        print(f"[retrieve_strategies] RAG retrieval failed: {e}")
+        chunks = []
+
+    return {
+        **state,
+        "retrieval_query": query,
+        "retrieved_strategies": chunks,
+    }
 
 
 def plan_intervention(state: ChurnAgentState) -> ChurnAgentState:
