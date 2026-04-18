@@ -28,9 +28,6 @@ Thumbs.db
 .env
 *.env
 
-# Chroma local vector store
-chroma_db/
-
 # Explicit Python bytecode
 *.pyc
 
