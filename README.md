@@ -117,7 +117,9 @@ genAI_capstone_project/
 |  |- model_training.py           # Model loader
 |  |- evaluation.py               # ROC curve and confusion matrix helpers
 |  |- save_test_data.py           # One-time test split generator
+|  |- __init.py 
 |  |- agent/
+|     |- __init__.py  
 |     |- state.py                # LangGraph TypedDict state definition
 |     |- nodes.py                # Four node functions
 |     |- graph.py                # StateGraph compilation
